@@ -39,6 +39,10 @@ h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: -.01em; }
 .tabs { display: flex; gap: 6px; margin: 0 0 14px; position: sticky; top: 0; z-index: 500; background: var(--bg); padding: 8px 0; }
 .tabs button { border: 0; background: var(--card); color: var(--text); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 500; cursor: pointer; box-shadow: var(--shadow); display: inline-flex; align-items: center; gap: 6px; }
 .tabs button[aria-selected="true"] { background: var(--accent); color: #fff; }
+.years { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 12px; }
+.years button { border: 1px solid var(--line); background: var(--card); color: var(--text); padding: 5px 12px; border-radius: 999px; font: inherit; font-size: 14px; cursor: pointer; }
+.years button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.years button small { color: var(--muted); font-weight: 400; margin-left: 4px; }
 #map { height: min(62vh, 560px); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); background: var(--line); }
 .legend { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: 13px; margin: 10px 2px 0; }
 .day { background: var(--card); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
@@ -184,6 +188,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 30px; text-align: c
     const countries = new Set([...days.map(d => d.cc).filter(Boolean), ...places.map(p => p.country).filter(Boolean)]);
     const period = M.from || M.to ? `${M.from ? fmtDate(M.from, { day: 'numeric', month: 'short', year: 'numeric' }) : '…'} – ${M.to ? fmtDate(M.to, { day: 'numeric', month: 'short', year: 'numeric' }) : '…'}`
       : days.length ? `${fmtDate(days[0].date, { month: 'short', year: 'numeric' })} – ${fmtDate(days[days.length - 1].date, { month: 'short', year: 'numeric' })}` : '';
+    const years = [...new Set(days.map(d => d.date.slice(0, 4)))].sort().reverse();
     const hasMap = days.some(d => d.lat != null || (d.photos || []).some(p => p.lat != null)) || places.some(p => p.lat != null);
     $('#app').innerHTML = `<div class="wrap">
       <header class="top"><div><h1>${esc(M.title || 'Reisen')}</h1>
@@ -200,7 +205,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 30px; text-align: c
         ${places.length ? `<button role="tab" data-tab="places">${ms('location_on')}Orte</button>` : ''}
       </nav>
       <section data-panel="map" hidden><div id="map"></div><div class="legend">${photos.some(p => p.lat != null || p.day.lat != null) ? '<span>▣ Bilder</span>' : ''}${places.length ? '<span>● Orte (✓ = besucht)</span>' : ''}</div></section>
-      <section data-panel="days" hidden>${days.map(dayHtml).join('')}</section>
+      <section data-panel="days" hidden>${years.length > 1 ? `<div class="years" role="group" aria-label="Jahr">${['', ...years].map(y => `<button data-year="${y}" aria-pressed="${y === ''}">${y || 'Alle'}<small>${y ? days.filter(d => d.date.startsWith(y)).length : days.length}</small></button>`).join('')}</div>` : ''}${days.map(dayHtml).join('')}</section>
       <section data-panel="places" hidden>${placesHtml(places)}</section>
       <footer>Privat geteilt · ${M.days && M.days.length ? 'Tagebuchtexte und ' : ''}persönliche Notizen sind nicht enthalten</footer>
     </div>`;
@@ -215,6 +220,12 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 30px; text-align: c
     }), { rootMargin: '400px' });
     document.querySelectorAll('img[data-i]').forEach(img => io.observe(img));
     document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openLb(+b.dataset.open));
+    // Jahr wählen: nur dessen Reisetage zeigen
+    document.querySelectorAll('.years button').forEach(b => b.onclick = () => {
+      const y = b.dataset.year;
+      document.querySelectorAll('.years button').forEach(x => x.setAttribute('aria-pressed', x === b));
+      document.querySelectorAll('article.day').forEach(a => a.hidden = !!y && a.dataset.y !== y);
+    });
   }
 
   function dayHtml(d) {
@@ -222,7 +233,7 @@ footer { color: var(--muted); font-size: 12.5px; margin-top: 30px; text-align: c
     if (d.place) bits.push(`<span>${ms('location_on')} ${esc(d.place)}</span>`);
     if (d.cc) bits.push(`<span>${flag(d.cc)} ${esc(countryName(d.cc))}</span>`);
     if (d.weather) bits.push(`<span>${esc(d.weather)}</span>`);
-    return `<article class="day"><h3>${esc(fmtDate(d.date))}${d.title ? ' · ' + esc(d.title) : ''}</h3>
+    return `<article class="day" data-y="${d.date.slice(0, 4)}"><h3>${esc(fmtDate(d.date))}${d.title ? ' · ' + esc(d.title) : ''}</h3>
       ${bits.length ? `<div class="meta">${bits.join('')}</div>` : ''}
       ${(d.photos || []).length ? `<div class="grid">${d.photos.map(p => `<button data-open="${p.i}" aria-label="Bild öffnen"><img data-i="${p.i}" alt=""></button>`).join('')}</div>` : ''}</article>`;
   }
