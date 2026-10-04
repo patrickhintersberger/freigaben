@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reisen</title>
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#16171a" media="(prefers-color-scheme: dark)">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..24,400..600,0..1,0&icon_names=account_balance,beach_access,calendar_month,camping,check_circle,chevron_left,chevron_right,close,hiking,hotel,landscape,link_off,local_cafe,location_city,location_on,lock,map,museum,open_in_new,park,photo_library,place,restaurant,rv_hookup,schedule,water&display=block">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css">
+<style>
+:root {
+  --bg: #f3f4f7; --card: #fff; --text: #1c1d21; --muted: #6b7079; --line: #e3e5ea; --accent: #4a86fb; --accent-soft: #e8f0fe; --ok: #1e9e5a;
+  --shadow: 0 1px 2px rgba(0,0,0,.05), 0 4px 14px rgba(0,0,0,.06); --radius: 16px;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #16171a; --card: #1f2125; --text: #ececf0; --muted: #9a9ea8; --line: #30333a; --accent: #7aa7ff; --accent-soft: #23314d; --ok: #4cc584; --shadow: none; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-text-size-adjust: 100%; }
+.ms { font-family: 'Material Symbols Rounded'; font-weight: normal; font-style: normal; font-size: 20px; line-height: 1; display: inline-block; vertical-align: -4px; font-variation-settings: 'FILL' 0, 'wght' 450; -webkit-font-smoothing: antialiased; }
+.ms.fill { font-variation-settings: 'FILL' 1, 'wght' 450; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 20px 16px 60px; }
+header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 20px; margin: 8px 0 18px; }
+h1 { font-size: 28px; line-height: 1.2; margin: 0; letter-spacing: -.01em; }
+.sub { color: var(--muted); margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px 14px; }
+.sub span { display: inline-flex; align-items: center; gap: 4px; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 10px; margin-bottom: 16px; }
+.stat { background: var(--card); border-radius: 14px; padding: 10px 14px; box-shadow: var(--shadow); }
+.stat b { display: block; font-size: 22px; }
+.stat span { color: var(--muted); font-size: 13px; }
+.tabs { display: flex; gap: 6px; margin: 0 0 14px; position: sticky; top: 0; z-index: 500; background: var(--bg); padding: 8px 0; }
+.tabs button { border: 0; background: var(--card); color: var(--text); padding: 8px 14px; border-radius: 999px; font: inherit; font-weight: 500; cursor: pointer; box-shadow: var(--shadow); display: inline-flex; align-items: center; gap: 6px; }
+.tabs button[aria-selected="true"] { background: var(--accent); color: #fff; }
+#map { height: min(62vh, 560px); border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow); background: var(--line); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; color: var(--muted); font-size: 13px; margin: 10px 2px 0; }
+.day { background: var(--card); border-radius: var(--radius); padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.day h3 { margin: 0; font-size: 16px; }
+.day .meta { color: var(--muted); font-size: 13.5px; display: flex; flex-wrap: wrap; gap: 2px 12px; margin-top: 2px; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 6px; margin-top: 10px; }
+.grid button { border: 0; padding: 0; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--line); cursor: zoom-in; }
+.grid img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .2s; }
+.grid img.on { opacity: 1; }
+.country { margin: 18px 2px 8px; font-size: 17px; }
+.place { background: var(--card); border-radius: 14px; padding: 12px 14px; margin-bottom: 8px; box-shadow: var(--shadow); display: flex; gap: 12px; }
+.place .ic { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; color: #fff; flex: none; }
+.place .ic .ms { font-size: 19px; vertical-align: 0; }
+.place b { font-weight: 600; }
+.place .meta { color: var(--muted); font-size: 13px; }
+.place p { margin: 4px 0 0; font-size: 14px; }
+.place a { color: var(--accent); text-decoration: none; font-size: 13.5px; display: inline-flex; align-items: center; gap: 2px; margin-top: 4px; }
+.done { color: var(--ok); font-size: 13px; display: inline-flex; align-items: center; gap: 2px; }
+.trip-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 4px; }
+.state { max-width: 460px; margin: 18vh auto 0; text-align: center; padding: 0 20px; }
+.state .ms { font-size: 48px; color: var(--muted); }
+.state h1 { font-size: 22px; margin: 12px 0 6px; }
+.state p { color: var(--muted); margin: 0; }
+.bar { height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 18px auto 0; width: 200px; }
+.bar i { display: block; height: 100%; width: 30%; background: var(--accent); border-radius: 3px; animation: slide 1.1s ease-in-out infinite alternate; }
+@keyframes slide { from { margin-left: 0; } to { margin-left: 70%; } }
+.pin-photo { width: 44px; height: 44px; border-radius: 10px; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); background: #ccc center/cover; }
+.pin-place { width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35); display: grid; place-items: center; color: #fff; }
+.pin-place .ms { font-size: 15px; vertical-align: 0; }
+.cl { width: 46px; height: 46px; border-radius: 12px; border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,.35); background: #888 center/cover; position: relative; }
+.cl span { position: absolute; right: -8px; top: -8px; background: var(--accent); color: #fff; font-size: 12px; font-weight: 600; min-width: 22px; height: 22px; border-radius: 11px; display: grid; place-items: center; padding: 0 5px; border: 2px solid #fff; }
+.leaflet-popup-content { margin: 10px 12px; font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+.lb { position: fixed; inset: 0; background: rgba(0,0,0,.92); z-index: 2000; display: grid; place-items: center; }
+.lb[hidden] { display: none; }
+.lb img { max-width: 100vw; max-height: 100vh; object-fit: contain; }
+.lb button { position: absolute; border: 0; background: rgba(255,255,255,.14); color: #fff; width: 46px; height: 46px; border-radius: 50%; cursor: pointer; display: grid; place-items: center; }
+.lb .x { top: max(14px, env(safe-area-inset-top)); right: 14px; }
+.lb .prev { left: 10px; top: 50%; transform: translateY(-50%); }
+.lb .next { right: 10px; top: 50%; transform: translateY(-50%); }
+.lb .cap { position: absolute; left: 0; right: 0; bottom: 0; color: #fff; padding: 14px 18px max(14px, env(safe-area-inset-bottom)); background: linear-gradient(transparent, rgba(0,0,0,.6)); font-size: 14px; }
+.lb .spin { position: absolute; color: #fff; }
+footer { color: var(--muted); font-size: 12.5px; margin-top: 30px; text-align: center; }
+@media (max-width: 600px) { h1 { font-size: 23px; } .grid { grid-template-columns: repeat(3, 1fr); } }
+</style>
+</head>
+<body>
+<div id="app"><div class="state"><span class="ms">lock</span><h1>Wird geöffnet …</h1><p>Die Bilder werden entschlüsselt.</p><div class="bar"><i></i></div></div></div>
+<div class="lb" id="lb" hidden><img alt=""><span class="spin">Lädt …</span><button class="x" aria-label="Schließen"><span class="ms">close</span></button><button class="prev" aria-label="Vorheriges Bild"><span class="ms">chevron_left</span></button><button class="next" aria-label="Nächstes Bild"><span class="ms">chevron_right</span></button><div class="cap"></div></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@maplibre/maplibre-gl-leaflet@0.0.22/leaflet-maplibre-gl.js"></script>
+<script>
+// Ansicht einer Freigabe. Der Link hat die Form …/freigaben/#<Ablaufdatum>_<id>.<Schlüssel>.
+// Der Schlüssel steht nur hinter dem #, wird also nie an einen Server geschickt. Alle Dateien sind mit AES-GCM verschlüsselt.
+(function () {
+  const RAW = location.hostname === 'localhost' ? './' : 'https://raw.githubusercontent.com/patrickhintersberger/freigaben/main/';
+  const CATS = {
+    sehenswuerdigkeit: ['Sehenswürdigkeit', 'museum', '#7B4FD6'], camping: ['Campingplatz', 'camping', '#2E8B3E'],
+    restaurant: ['Restaurant', 'restaurant', '#E8710A'], aussicht: ['Aussichtspunkt', 'landscape', '#0F9D9A'],
+    strand: ['Strand', 'beach_access', '#1FA5E0'], wandern: ['Wanderung', 'hiking', '#3D6B35'],
+    natur: ['Natur & Nationalpark', 'park', '#6B8E23'], wasser: ['Wasserfall & See', 'water', '#1A73E8'],
+    unterkunft: ['Unterkunft', 'hotel', '#D63F8C'], stellplatz: ['Wohnmobil-Stellplatz', 'rv_hookup', '#7A7A2E'],
+    cafe: ['Café & Bar', 'local_cafe', '#8D5B3E'], museum: ['Museum', 'account_balance', '#546E8A'],
+    stadt: ['Stadt & Ort', 'location_city', '#5F6B7A'], sonstiges: ['Sonstiges', 'place', '#D93025'],
+  };
+  const $ = s => document.querySelector(s);
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const ms = (n, fill) => `<span class="ms${fill ? ' fill' : ''}">${n}</span>`;
+  const fmtDate = (d, opts) => new Date(d + 'T12:00:00').toLocaleDateString('de-DE', opts || { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+  const today = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const countryName = cc => { try { return new Intl.DisplayNames(['de'], { type: 'region' }).of(cc.toUpperCase()); } catch { return cc.toUpperCase(); } };
+  const flag = cc => cc && cc.length === 2 ? String.fromCodePoint(...[...cc.toUpperCase()].map(ch => 0x1F1E6 + ch.charCodeAt(0) - 65)) : '';
+
+  function state(icon, title, text) {
+    $('#app').innerHTML = `<div class="state">${ms(icon)}<h1>${esc(title)}</h1><p>${esc(text)}</p></div>`;
+    document.title = title;
+  }
+  const b64urlBytes = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - s.length % 4) % 4)), c => c.charCodeAt(0));
+
+  // ---------- Link prüfen ----------
+  const m = /^#?(\d{4}-\d{2}-\d{2})_([a-z0-9]{6,32})\.([A-Za-z0-9_-]{43})$/.exec(location.hash);
+  if (!m) return state('link_off', 'Ungültiger Link', 'Dieser Link ist unvollständig. Bitte lass ihn dir noch einmal schicken.');
+  const [, until, id, keyStr] = m;
+  const folder = `${until}_${id}`;
+  const expired = () => today() > until;
+  if (expired()) return state('schedule', 'Dieser Link ist abgelaufen', `Er war bis ${fmtDate(until, { day: 'numeric', month: 'long', year: 'numeric' })} gültig.`);
+  let key;
+
+  async function decrypt(buf) {
+    const iv = buf.slice(0, 12), data = buf.slice(12);
+    return new Uint8Array(await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, key, data));
+  }
+  async function getFile(name) {
+    const res = await fetch(RAW + folder + '/' + name, { cache: 'no-cache' });
+    if (res.status === 404) throw Object.assign(new Error('gone'), { gone: true });
+    if (!res.ok) throw new Error('Fehler ' + res.status);
+    return new Uint8Array(await res.arrayBuffer());
+  }
+  // Pakete mit mehreren Bildern: einmal laden, dann Abschnitte entschlüsseln
+  const packs = new Map();
+  function pack(name) {
+    if (!packs.has(name)) packs.set(name, getFile(name).catch(e => { packs.delete(name); throw e; }));
+    return packs.get(name);
+  }
+  const urls = new Map();
+  async function imageURL(ref) {
+    const k = ref.join(':');
+    if (urls.has(k)) return urls.get(k);
+    const p = (async () => {
+      const [file, off, len] = ref;
+      const buf = await pack(file);
+      return URL.createObjectURL(new Blob([await decrypt(buf.slice(off, off + len))], { type: 'image/jpeg' }));
+    })();
+    urls.set(k, p);
+    p.catch(() => urls.delete(k));
+    return p;
+  }
+
+  let M; // Inhalt der Freigabe
+  (async () => {
+    try {
+      key = await crypto.subtle.importKey('raw', b64urlBytes(keyStr), 'AES-GCM', false, ['decrypt']);
+      M = JSON.parse(new TextDecoder().decode(await decrypt(await getFile('data.bin'))));
+    } catch (e) {
+      if (e.gone) return state('link_off', 'Diese Freigabe gibt es nicht mehr', 'Sie ist abgelaufen oder wurde beendet.');
+      if (e.name === 'OperationError') return state('link_off', 'Ungültiger Link', 'Der Schlüssel im Link passt nicht. Bitte lass ihn dir noch einmal schicken.');
+      return state('link_off', 'Konnte nicht geladen werden', 'Bitte prüfe die Internetverbindung und lade die Seite neu.');
+    }
+    if (M.until && today() > M.until) return state('schedule', 'Dieser Link ist abgelaufen', `Er war bis ${fmtDate(M.until, { day: 'numeric', month: 'long', year: 'numeric' })} gültig.`);
+    render();
+  })();
+
+  // ---------- Darstellung ----------
+  let photos = []; // alle Bilder in Reihenfolge, für Lightbox
+  function render() {
+    document.title = M.title || 'Reisen';
+    const days = (M.days || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    photos = [];
+    days.forEach(d => (d.photos || []).forEach(p => { p.day = d; p.i = photos.length; photos.push(p); }));
+    const places = M.places || [];
+    const countries = new Set([...days.map(d => d.cc).filter(Boolean), ...places.map(p => p.country).filter(Boolean)]);
+    const period = M.from || M.to ? `${M.from ? fmtDate(M.from, { day: 'numeric', month: 'short', year: 'numeric' }) : '…'} – ${M.to ? fmtDate(M.to, { day: 'numeric', month: 'short', year: 'numeric' }) : '…'}`
+      : days.length ? `${fmtDate(days[0].date, { month: 'short', year: 'numeric' })} – ${fmtDate(days[days.length - 1].date, { month: 'short', year: 'numeric' })}` : '';
+    const hasMap = days.some(d => d.lat != null || (d.photos || []).some(p => p.lat != null)) || places.some(p => p.lat != null);
+    $('#app').innerHTML = `<div class="wrap">
+      <header class="top"><div><h1>${esc(M.title || 'Reisen')}</h1>
+        <div class="sub">${period ? `<span>${ms('calendar_month')}${esc(period)}</span>` : ''}<span>${ms('schedule')}Link gültig bis ${esc(fmtDate(M.until, { day: 'numeric', month: 'long', year: 'numeric' }))}</span></div></div></header>
+      <div class="stats">
+        ${days.length ? `<div class="stat"><b>${days.length}</b><span>${days.length === 1 ? 'Reisetag' : 'Reisetage'}</span></div>` : ''}
+        ${photos.length ? `<div class="stat"><b>${photos.length}</b><span>Bilder</span></div>` : ''}
+        ${places.length ? `<div class="stat"><b>${places.length}</b><span>Orte</span></div>` : ''}
+        ${countries.size ? `<div class="stat"><b>${countries.size}</b><span>${countries.size === 1 ? 'Land' : 'Länder'}</span></div>` : ''}
+      </div>
+      <nav class="tabs" role="tablist">
+        ${hasMap ? `<button role="tab" data-tab="map">${ms('map')}Karte</button>` : ''}
+        ${days.length ? `<button role="tab" data-tab="days">${ms('photo_library')}Reisetage</button>` : ''}
+        ${places.length ? `<button role="tab" data-tab="places">${ms('location_on')}Orte</button>` : ''}
+      </nav>
+      <section data-panel="map" hidden><div id="map"></div><div class="legend">${photos.some(p => p.lat != null || p.day.lat != null) ? '<span>▣ Bilder</span>' : ''}${places.length ? '<span>● Orte (✓ = besucht)</span>' : ''}</div></section>
+      <section data-panel="days" hidden>${days.map(dayHtml).join('')}</section>
+      <section data-panel="places" hidden>${placesHtml(places)}</section>
+      <footer>Privat geteilt · ${M.days && M.days.length ? 'Tagebuchtexte und ' : ''}persönliche Notizen sind nicht enthalten</footer>
+    </div>`;
+    document.querySelectorAll('[data-tab]').forEach(b => b.onclick = () => tab(b.dataset.tab));
+    tab(hasMap ? 'map' : days.length ? 'days' : 'places');
+    // Vorschaubilder nachladen, sobald sie sichtbar werden
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (!e.isIntersecting) return;
+      io.unobserve(e.target);
+      const p = photos[+e.target.dataset.i];
+      imageURL(p.t).then(u => { e.target.src = u; e.target.classList.add('on'); }).catch(() => {});
+    }), { rootMargin: '400px' });
+    document.querySelectorAll('img[data-i]').forEach(img => io.observe(img));
+    document.querySelectorAll('[data-open]').forEach(b => b.onclick = () => openLb(+b.dataset.open));
+  }
+
+  function dayHtml(d) {
+    const bits = [];
+    if (d.place) bits.push(`<span>${ms('location_on')} ${esc(d.place)}</span>`);
+    if (d.cc) bits.push(`<span>${flag(d.cc)} ${esc(countryName(d.cc))}</span>`);
+    if (d.weather) bits.push(`<span>${esc(d.weather)}</span>`);
+    return `<article class="day"><h3>${esc(fmtDate(d.date))}${d.title ? ' · ' + esc(d.title) : ''}</h3>
+      ${bits.length ? `<div class="meta">${bits.join('')}</div>` : ''}
+      ${(d.photos || []).length ? `<div class="grid">${d.photos.map(p => `<button data-open="${p.i}" aria-label="Bild öffnen"><img data-i="${p.i}" alt=""></button>`).join('')}</div>` : ''}</article>`;
+  }
+
+  function placesHtml(places) {
+    const trips = new Map((M.trips || []).map(t => [t.id, t]));
+    const groups = new Map();
+    places.forEach(p => { const k = p.country || ''; if (!groups.has(k)) groups.set(k, []); groups.get(k).push(p); });
+    return [...groups.entries()].sort((a, b) => countryName(a[0] || 'zz').localeCompare(countryName(b[0] || 'zz'), 'de')).map(([cc, list]) => {
+      list.sort((a, b) => (a.city || '').localeCompare(b.city || '', 'de') || a.name.localeCompare(b.name, 'de'));
+      return `<h2 class="country">${cc ? flag(cc) + ' ' + esc(countryName(cc)) : 'Ohne Land'} <span style="color:var(--muted);font-weight:400;font-size:14px">${list.length}</span></h2>` + list.map(p => {
+        const c = CATS[p.category] || CATS.sonstiges;
+        const tr = (p.tripIds || []).map(id => trips.get(id)).filter(Boolean);
+        return `<div class="place"><div class="ic" style="background:${c[2]}">${ms(c[1])}</div><div>
+          <b>${esc(p.name)}</b> ${p.visited ? `<span class="done">${ms('check_circle', true)}besucht${p.visitedDate ? ' ' + esc(fmtDate(p.visitedDate, { month: 'short', year: 'numeric' })) : ''}</span>` : ''}
+          <div class="meta">${esc(c[0])}${p.city ? ' · ' + esc(p.city) : ''}${tr.map(t => ` · <span class="trip-dot" style="background:${esc(t.color || '#888')}"></span>${esc(t.name)}`).join('')}</div>
+          ${p.info ? `<p>${esc(p.info)}</p>` : ''}
+          ${p.lat != null ? `<a href="https://www.google.com/maps/search/?api=1&query=${p.lat},${p.lng}" target="_blank" rel="noopener noreferrer">${ms('open_in_new')} In Google Maps öffnen</a>` : ''}
+        </div></div>`;
+      }).join('');
+    }).join('');
+  }
+
+  let map = null;
+  function tab(name) {
+    document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === name));
+    document.querySelectorAll('[data-panel]').forEach(s => s.hidden = s.dataset.panel !== name);
+    if (name === 'map') { if (!map) buildMap(); else map.invalidateSize(); }
+  }
+
+  function buildMap() {
+    if (!window.L) { $('#map').innerHTML = '<p style="padding:20px">Die Karte konnte nicht geladen werden.</p>'; return; }
+    map = L.map('map', { worldCopyJump: true, maxZoom: 18, zoomControl: true }).setView([48, 10], 4);
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    const attr = '<a href="https://openfreemap.org" target="_blank" rel="noopener">OpenFreeMap</a> &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap</a>';
+    if (L.maplibreGL) {
+      const layer = L.maplibreGL({ style: `https://tiles.openfreemap.org/styles/${dark ? 'dark' : 'liberty'}`, attribution: attr }).addTo(map);
+      const gl = layer.getMaplibreMap();
+      gl.on('styledata', function de() {
+        gl.off('styledata', de);
+        gl.getStyle().layers.forEach(l => {
+          if (l.type === 'symbol' && l.layout && l.layout['text-field'] && /name/.test(JSON.stringify(l.layout['text-field'])))
+            try { gl.setLayoutProperty(l.id, 'text-field', ['coalesce', ['get', 'name:de'], ['get', 'name:latin'], ['get', 'name']]); } catch {}
+        });
+      });
+    } else L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: attr, maxZoom: 19 }).addTo(map);
+
+    const pts = [];
+    // Orte der Reisekarte
+    (M.places || []).filter(p => p.lat != null).forEach(p => {
+      const c = CATS[p.category] || CATS.sonstiges;
+      const icon = L.divIcon({ className: '', iconSize: [26, 26], iconAnchor: [13, 13], html: `<div class="pin-place" style="background:${c[2]}${p.visited ? '' : ';opacity:.85'}">${ms(p.visited ? 'check_circle' : c[1], p.visited)}</div>` });
+      L.marker([p.lat, p.lng], { icon, title: p.name }).addTo(map)
+        .bindPopup(`<b>${esc(p.name)}</b><br><span style="color:#777">${esc(c[0])}${p.city ? ' · ' + esc(p.city) : ''}${p.visited ? ' · ✓ besucht' : ''}</span>${p.info ? `<br>${esc(p.info)}` : ''}`);
+      pts.push([p.lat, p.lng]);
+    });
+    // Bilder als kleine Vorschaubilder, gebündelt
+    const cluster = L.markerClusterGroup ? L.markerClusterGroup({
+      showCoverageOnHover: false, maxClusterRadius: 50,
+      iconCreateFunction(cl) {
+        const first = cl.getAllChildMarkers()[0];
+        const el = L.divIcon({ className: '', iconSize: [46, 46], html: `<div class="cl" data-ti="${first.options.pi}"><span>${cl.getChildCount()}</span></div>` });
+        return el;
+      },
+    }) : L.layerGroup();
+    photos.forEach(p => {
+      const lat = p.lat != null ? p.lat : p.day.lat, lng = p.lat != null ? p.lng : p.day.lng;
+      if (lat == null) return;
+      const icon = L.divIcon({ className: '', iconSize: [44, 44], html: `<div class="pin-photo" data-ti="${p.i}"></div>` });
+      const mk = L.marker([lat, lng], { icon, pi: p.i });
+      mk.on('click', () => openLb(p.i));
+      cluster.addLayer(mk);
+      pts.push([lat, lng]);
+    });
+    map.addLayer(cluster);
+    // Vorschaubilder in die Markierungen einsetzen, sobald sie auf der Karte erscheinen
+    const fill = () => document.querySelectorAll('#map [data-ti]:not([data-done])').forEach(el => {
+      el.dataset.done = '1';
+      imageURL(photos[+el.dataset.ti].t).then(u => { el.style.backgroundImage = `url("${u}")`; }).catch(() => {});
+    });
+    map.on('zoomend moveend layeradd', () => setTimeout(fill, 50));
+    if (pts.length) map.fitBounds(L.latLngBounds(pts).pad(0.1), { maxZoom: 13 }); else map.setView([48, 10], 4);
+    setTimeout(fill, 300);
+  }
+
+  // ---------- Bild groß ----------
+  let cur = -1;
+  const lb = $('#lb');
+  async function openLb(i) {
+    if (i < 0 || i >= photos.length) return;
+    cur = i;
+    const p = photos[i];
+    lb.hidden = false;
+    const img = lb.querySelector('img');
+    img.style.visibility = 'hidden';
+    lb.querySelector('.spin').hidden = false;
+    lb.querySelector('.cap').textContent = [fmtDate(p.day.date), p.day.place].filter(Boolean).join(' · ');
+    // Erst das Vorschaubild zeigen, dann das große Bild nachladen
+    imageURL(p.t).then(u => { if (cur === i && img.style.visibility === 'hidden') { img.src = u; img.style.visibility = ''; } }).catch(() => {});
+    try {
+      const u = await imageURL(p.p);
+      if (cur !== i) return;
+      img.src = u; img.style.visibility = '';
+    } catch {}
+    lb.querySelector('.spin').hidden = true;
+  }
+  const closeLb = () => { lb.hidden = true; cur = -1; };
+  lb.querySelector('.x').onclick = closeLb;
+  lb.querySelector('.prev').onclick = e => { e.stopPropagation(); openLb(cur - 1); };
+  lb.querySelector('.next').onclick = e => { e.stopPropagation(); openLb(cur + 1); };
+  lb.addEventListener('click', e => { if (e.target === lb) closeLb(); });
+  addEventListener('keydown', e => {
+    if (lb.hidden) return;
+    if (e.key === 'Escape') closeLb();
+    if (e.key === 'ArrowLeft') openLb(cur - 1);
+    if (e.key === 'ArrowRight') openLb(cur + 1);
+  });
+  let tx = null;
+  lb.addEventListener('touchstart', e => { tx = e.touches[0].clientX; }, { passive: true });
+  lb.addEventListener('touchend', e => { if (tx == null) return; const dx = e.changedTouches[0].clientX - tx; tx = null; if (Math.abs(dx) > 50) openLb(cur + (dx < 0 ? 1 : -1)); });
+  // Läuft der Link ab, während die Seite offen ist: beim Zurückkehren sperren
+  document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && expired()) state('schedule', 'Dieser Link ist abgelaufen', ''); });
+})();
+</script>
+</body>
+</html>
